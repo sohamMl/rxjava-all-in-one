@@ -1,5 +1,9 @@
 import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.observables.ConnectableObservable;
+
+import java.util.concurrent.TimeUnit;
 
 import static java.lang.Thread.sleep;
 
@@ -46,10 +50,53 @@ public class Main {
      * The moment we call connect() method it starts emission
      * Any Observer which subscribes after calling connect() misses emissions
      */
-    private static void createHotAndConnectableObservable() {
-        ConnectableObservable<Integer> observable = Observable.just(1, 2, 3, 4, 5).publish();
+//    private static void createHotAndConnectableObservable() {
+//        ConnectableObservable<Integer> observable = Observable.just(1, 2, 3, 4, 5).publish();
+//
+//        observable.subscribe(item -> System.out.println("Observer 1: " + item));
+//    }
 
-        observable.subscribe(item -> System.out.println("Observer 1: " + item));
+    private static void createHotAndConnectableObservable() {
+
+        Observable observable = Observable.interval(1, TimeUnit.SECONDS);
+        observable.subscribe(System.out::println);
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+
+
+        Observable<Integer> ob = Observable.create(new ObservableOnSubscribe<Integer>() {
+
+            @Override
+            public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+                for(int i=0;i<15;i++){
+                    emitter.onNext(i);
+                    Thread.sleep(1000);
+                }
+            }
+        });
+
+
+//        ob.subscribe(item -> System.out.println("sub 1 : "+item));
+
+//        ob.subscribe(item -> System.out.println("sub 2 : "+item));
+
+        ConnectableObservable<Integer> ConnectOb = ob.publish();
+
+        ConnectOb.subscribe(item -> System.out.println("sub 1 : "+item));
+        try {
+            Thread.sleep(4000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        ConnectOb.subscribe(item -> System.out.println("sub 2 : "+item));
+
+        ConnectOb.connect();
+
+
     }
 
     /**
